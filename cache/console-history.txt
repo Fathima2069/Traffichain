@@ -1,0 +1,163 @@
+.exit
+await contract.getPenalty(1);
+await contract.addPenalty("KL07AB1234", 500);
+);
+  "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+  "TrafficPenalty",
+const contract = await ethers.getContractAt(
+.exit
+await contract.addPenalty("KL07AB1234", 500);
+);
+  " 0x5FbDB2315678afecb367f032d93F642f64180aa3" 
+  "TrafficPenalty",
+const contract = await ethers.getContractAt(
+await contract.getPenalty(1);
+await contract.addPenalty("KL07AB1234", 500);
+);
+  "PASTE_ADDRESS"
+  "TrafficPenalty",
+const contract = await ethers.getContractAt(
+const TrafficPenalty = await ethers.getContractFactory("TrafficPenalty");
+const [owner, user] = await ethers.getSigners();
+.exit
+);
+  "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+  "TrafficPenalty",
+trafficPenalty = await ethers.getContractAt(
+let [owner, user] = await ethers.getSigners();
+);
+  "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+  "TrafficPenalty",
+trafficPenalty = await ethers.getContractAt(
+let [owner, user] = await ethers.getSigners();
+await trafficPenalty.connect(user).payFine(1, { value: 500 });
+// Pay a fine (replace 1 with the violation ID)
+);
+  { from: owner.address }
+  500,          // fine amount
+  "No helmet",  // violation description
+  "KL01AA1111", // vehicle number
+await trafficPenalty.addViolation(
+// Add a new violation
+console.log("Violations:", count.toString());
+let count = await trafficPenalty.violationCount();
+// Check the number of violations
+);
+  "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+  "TrafficPenalty",
+trafficPenalty = await ethers.getContractAt(
+);
+  "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+  "TrafficPenalty",
+const trafficPenalty = await ethers.getContractAt(
+const [owner, user] = await ethers.getSigners();
+);
+  "0x5FbDB2315678afecb367f032d93F642f64180aa3" // replace with your deployed address
+  "TrafficPenalty",
+const trafficPenalty = await ethers.getContractAt(
+const [owner, user] = await ethers.getSigners();
+const [owner, user] = await ethers.getSigners();const trafficPenalty = await ethers.getContractAt(  "TrafficPenalty",  "0x<YOUR_DEPLOYED_CONTRACT_ADDRESS>");
+.exit
+npx hardhat run scripts/deploy.js --network localhost
+.exit
+const [owner, user] = await ethers.getSigners();
+await trafficPenalty.connect(accounts[1]).payFine(7, { value: 500 })
+await trafficPenalty.getViolation(7)
+await trafficPenalty.violationCount()
+)
+  accounts[1].address
+  500,
+  "No helmet",
+  "KL08AA9999",
+await trafficPenalty.addViolation(
+const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+await trafficPenalty.getViolation(6)
+await trafficPenalty.connect(accounts[2]).payFine(6, { value: 300 })
+await trafficPenalty.violationCount()
+)
+  accounts[2].address
+  300,
+  "Signal jump",
+  "KL07AB1234",
+await trafficPenalty.addViolation(
+await trafficPenalty.getViolation(5)
+await trafficPenalty.connect(accounts[1]).payFine(5, { value: 500 })
+await trafficPenalty.getViolation(5)
+await trafficPenalty.connect(accounts[1]).payFine(5, { value: 500 })
+await trafficPenalty.getViolation(5)
+await trafficPenalty.violationCount()
+await trafficPenalty.addViolation("KL01AA1111","No helmet",500,accounts[1].address)
+await trafficPenalty.violationCount()
+)
+accounts[1].address
+500,
+"No helmet",
+"KL01AA1111",
+await trafficPenalty.addViolation(
+const accounts = await ethers.getSigners();
+addViolation(..., 500, ...)
+await trafficPenalty.connect(accounts[2]).payFine(2, { value: 500 })
+await trafficPenalty.connect(accounts[2]).payFine(2, { value: 300 })
+await trafficPenalty.connect(accounts[2]).payFine(2, { value: 500 })
+await trafficPenalty.getViolation(2)
+await trafficPenalty.connect(accounts[2]).payFine(2, { value: 300 })
+await trafficPenalty.violationCount()
+)
+  accounts[2].address
+  300,
+  "Signal jump",
+  "KL07XY9999",
+await trafficPenalty.addViolation(
+await trafficPenalty.getViolation(1)
+await trafficPenalty.connect(accounts[1]).payFine(1, { value: 500 })
+await trafficPenalty.getViolation(1)
+await trafficPenalty.violationCount()
+await trafficPenalty.addViolation("KL07AB1234","No helmet",500,accounts[1].address)
+await trafficPenalty.getViolation(1)
+await trafficPenalty.connect(accounts[1]).payFine(1, { value: 500 })
+await trafficPenalty.getViolation(1)
+await trafficPenalty.violationCount()
+)
+  accounts[1].address   // driver wallet
+  500,            // fine amount
+  "No helmet",    // violation reason
+  "KL07AB1234",   // vehicle number
+await trafficPenalty.addViolation(
+await trafficPenalty.violationCount()
+accounts.map(a => a.address)
+const accounts = await ethers.getSigners();
+accounts.map(a => a.address)
+Object.keys(trafficPenalty.functions)const accounts = await ethers.getSigners();
+const trafficPenalty = await TrafficPenalty.attach(contractAddress);
+const TrafficPenalty = await ethers.getContractFactory("TrafficPenalty");
+const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const TrafficPenalty = await ethers.getContractFactory("TrafficPenalty");
+const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const TrafficPenalty = await ethers.getContractFactory("TrafficPenalty");
+await trafficPenalty.addPenalty(accounts[1].address, 100);
+accounts.map(a => a.address);
+const accounts = await ethers.getSigners();
+const trafficPenalty = await TrafficPenalty.attach(contractAddress);
+const TrafficPenalty = await ethers.getContractFactory("TrafficPenalty");
+const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+.exit
+const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // your deployed addressconst TrafficPenalty = await ethers.getContractFactory("TrafficPenalty");const trafficPenalty = await TrafficPenalty.attach(contractAddress);
+await trafficPenalty.payFine(1, { value: ethers.parseEther("0.01") })
+await trafficPenalty.addPenalty(accounts[0].address, 100)
+const accounts = await ethers.getSigners();accounts.map(a => a.address)
+await trafficPenalty.someFunction(args)
+function getPenalty(address driver) public view returns (uint) { ... }
+function payFine(uint id) public payable { ... }
+function addPenalty(address driver, uint amount) public { ... }
+await trafficPenalty.someFunction(args)
+const trafficPenalty = await TrafficPenalty.attach(contractAddress);
+const TrafficPenalty = await ethers.getContractFactory("TrafficPenalty");
+await trafficPenalty.someFunction(args)
+trafficPenalty.address
+// 2. Check contract address
+const trafficPenalty = await TrafficPenalty.attach(contractAddress);
+const TrafficPenalty = await ethers.getContractFactory("TrafficPenalty");
+const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+// 1. Attach to your deployed contractctAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+// 1. Attach to your deployed contract

@@ -1,0 +1,77 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "C:\\Users\\Fathima Mytheen\\Desktop\\TraffiChain\\contracts\\TrafficPenalty.sol": {
+      "lastModificationDate": 1771488398037,
+      "contentHash": "820b64656b3c1e28f46c3228f77d4471",
+      "sourceName": "contracts/TrafficPenalty.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "TrafficPenalty"
+      ]
+    },
+    "C:\\Users\\Fathima Mytheen\\Desktop\\TraffiChain\\contracts\\ViolationStorage.sol": {
+      "lastModificationDate": 1771927544471,
+      "contentHash": "0eed728eb04556b4b78ee4ad345966d9",
+      "sourceName": "contracts/ViolationStorage.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "ViolationStorage"
+      ]
+    }
+  }
+}
