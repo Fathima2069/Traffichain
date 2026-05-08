@@ -16,6 +16,9 @@ import MyVehicles from "./pages/MyVehicles";
 
 import "./styles/main.css";
 import "./pages/AdminDashboard.css";
+import Profile from "./pages/Profile";
+
+
 
 function App() {
   return (
@@ -23,6 +26,7 @@ function App() {
       <Routes>
         {/* Login */}
         <Route path="/" element={<Login />} />
+        <Route path="/profile" element={<Profile />} />
 
         {/* Dashboards */}
         <Route path="/user" element={<UserDashboard />} />

@@ -5,12 +5,22 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer
 } from "recharts";
 
+/* 🔥 HOVER */
+const handleHover = (e, enter) => {
+  if (enter) {
+    e.currentTarget.style.transform = "translateY(-6px) scale(1.02)";
+    e.currentTarget.style.boxShadow = "0 20px 45px rgba(0,0,0,0.35)";
+  } else {
+    e.currentTarget.style.transform = "translateY(0)";
+    e.currentTarget.style.boxShadow = "0 10px 25px rgba(0,0,0,0.2)";
+  }
+};
+
 function AdminDashboard() {
 
   const [stats, setStats] = useState({ total: 0, paid: 0, pending: 0, revenue: 0 });
-  const [violations, setViolations] = useState([]);
   const [reports, setReports] = useState([]);
-
+  const [violations, setViolations] = useState([]); // ✅ NEW
   const [activeTab, setActiveTab] = useState("dashboard");
 
   const [form, setForm] = useState({
@@ -21,57 +31,54 @@ function AdminDashboard() {
     image: null
   });
 
-  const [theme, setTheme] = useState(localStorage.getItem("theme") || "dark");
-  const isDark = theme === "dark";
-
-  useEffect(() => {
-    document.body.className = theme;
-    localStorage.setItem("theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(isDark ? "light" : "dark");
-
   /* FETCH */
   const fetchData = async () => {
     const s = await axios.get("http://localhost:8000/api/stats");
-    const v = await axios.get("http://localhost:8000/api/violations");
     const r = await axios.get("http://localhost:8000/api/reports");
+    const v = await axios.get("http://localhost:8000/api/violations"); // ✅ NEW
 
     setStats(s.data);
-    setViolations(v.data);
     setReports(r.data);
+    setViolations(v.data); // ✅ NEW
   };
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  /* UPDATE STATUS */
-  const handleUpdate = async (id, status) => {
-    await axios.put(`http://localhost:8000/api/violations/${id}`, { status });
-    fetchData();
+  const handleDelete = async (id) => {
+    if (window.confirm("Delete this report?")) {
+      await axios.delete(`http://localhost:8000/api/reports/${id}`);
+      fetchData();
+    }
   };
 
   /* ADD VIOLATION */
   const addViolation = async (e) => {
     e.preventDefault();
 
-    const fd = new FormData();
-    Object.keys(form).forEach((k) => fd.append(k, form[k]));
+    try {
+      const fd = new FormData();
+      Object.keys(form).forEach((k) => fd.append(k, form[k]));
 
-    await axios.post("http://localhost:8000/api/violation", fd);
+      await axios.post("http://localhost:8000/api/violation", fd);
 
-    alert("Violation Added ✅");
+      alert("✅ Violation Added");
 
-    setForm({
-      vehicleNumber: "",
-      location: "",
-      description: "",
-      fineAmount: "",
-      image: null
-    });
+      setForm({
+        vehicleNumber: "",
+        location: "",
+        description: "",
+        fineAmount: "",
+        image: null
+      });
 
-    fetchData();
+      fetchData();
+
+    } catch (err) {
+      console.error(err);
+      alert("❌ Error adding violation");
+    }
   };
 
   const barData = [
@@ -88,141 +95,150 @@ function AdminDashboard() {
   const COLORS = ["#22c55e", "#f59e0b"];
 
   return (
-    <div style={{
-      ...styles.container,
-      background: isDark ? "#0f172a" : "#f1f5f9",
-      color: isDark ? "#fff" : "#000"
-    }}>
+    <div style={styles.container}>
 
-      {/* THEME BUTTON */}
-      <button onClick={toggleTheme} style={styles.toggle}>
-        {isDark ? "🌙" : "☀️"}
-      </button>
-
-      <h1 style={styles.title}>🚦 Admin Dashboard</h1>
-
-      {/* TABS */}
-      <div style={styles.tabs}>
-        {["dashboard", "add", "reports"].map((t) => (
-          <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            style={{
-              ...styles.tab,
-              background: activeTab === t ? "#22c55e" : "#334155"
-            }}
-          >
-            {t.toUpperCase()}
-          </button>
-        ))}
+      {/* SIDEBAR */}
+      <div style={styles.sidebar}>
+        <h2>🚦 Admin</h2>
+        <button style={styles.sideBtn}>🏠 Dashboard</button>
+        <button style={styles.sideBtn}>📊 Reports</button>
+        <button style={styles.sideBtn}>🚗 Violations</button>
       </div>
 
-      {/* DASHBOARD */}
-      {activeTab === "dashboard" && (
-        <>
-          {/* STATS */}
-          <div style={styles.grid}>
-            <Stat title="Total" value={stats.total} />
-            <Stat title="Revenue" value={`₹${stats.revenue}`} />
-            <Stat title="Paid" value={stats.paid} />
-            <Stat title="Pending" value={stats.pending} />
-          </div>
+      {/* MAIN */}
+      <div style={styles.main}>
 
-          {/* VIOLATIONS */}
-          <div style={{ marginTop: "20px" }}>
-            {violations.map((v) => (
-              <div key={v._id} style={styles.card}>
-                <div>
-                  <h3>🚗 {v.vehicleNumber}</h3>
-                  <p>📍 {v.location}</p>
-                  <p>💰 ₹{v.fineAmount}</p>
-                </div>
+        {/* TOPBAR */}
+        <div style={styles.topbar}>
+          <input placeholder="Search..." style={styles.search} />
+          <div>🔔 👤</div>
+        </div>
 
-                <select
-                  value={v.status}
-                  onChange={(e) => handleUpdate(v._id, e.target.value)}
-                  style={styles.select}
+        {/* TABS */}
+        <div style={styles.tabs}>
+          {["dashboard", "add", "reports", "violations"].map((t) => (
+            <button key={t} onClick={() => setActiveTab(t)} style={styles.tab}>
+              {t.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
+        {/* DASHBOARD */}
+        {activeTab === "dashboard" && (
+          <>
+            <div style={styles.grid}>
+              <Stat title="Total" value={stats.total} />
+              <Stat title="Revenue" value={`₹${stats.revenue}`} />
+              <Stat title="Paid" value={stats.paid} />
+              <Stat title="Pending" value={stats.pending} />
+            </div>
+
+            <div style={styles.chartGrid}>
+              <ChartBox title="Violations" data={barData} type="bar" />
+              <ChartBox title="Status" data={pieData} type="pie" colors={COLORS} />
+            </div>
+          </>
+        )}
+
+        {/* ADD */}
+        {activeTab === "add" && (
+          <form onSubmit={addViolation} style={styles.form}>
+            <h2>➕ Add Violation</h2>
+
+            <input style={styles.input} placeholder="Vehicle Number"
+              value={form.vehicleNumber}
+              onChange={(e) => setForm({ ...form, vehicleNumber: e.target.value })}
+            />
+
+            <input style={styles.input} placeholder="Location"
+              value={form.location}
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+            />
+
+            <input style={styles.input} placeholder="Description"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+
+            <input style={styles.input} placeholder="Fine Amount"
+              value={form.fineAmount}
+              onChange={(e) => setForm({ ...form, fineAmount: e.target.value })}
+            />
+
+            <input type="file"
+              onChange={(e) => setForm({ ...form, image: e.target.files[0] })}
+            />
+
+            <button style={styles.addBtn}>Add Violation</button>
+          </form>
+        )}
+
+        {/* REPORTS */}
+        {activeTab === "reports" && (
+          <div style={styles.reportGrid}>
+            {reports.map((r) => (
+              <div key={r._id} style={styles.card}
+                onMouseEnter={(e) => handleHover(e, true)}
+                onMouseLeave={(e) => handleHover(e, false)}
+              >
+                {r.image && (
+                  <img src={`http://localhost:8000/uploads/${r.image}`} style={styles.reportImg} />
+                )}
+
+                <h3>🚗 {r.vehicleNumber}</h3>
+                <p>📍 {r.location}</p>
+                <p>📝 {r.description}</p>
+
+                <a
+                  href={`https://www.google.com/maps?q=${encodeURIComponent(r.location)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={styles.mapBtn}
                 >
-                  <option>Pending</option>
-                  <option>Paid</option>
-                </select>
+                  📍 View Map
+                </a>
               </div>
             ))}
           </div>
+        )}
 
-          {/* CHARTS */}
-          <div style={styles.chartGrid}>
-            <ChartBox title="Violations" data={barData} type="bar" />
-            <ChartBox title="Status" data={pieData} type="pie" colors={COLORS} />
-          </div>
-        </>
-      )}
-
-      {/* ADD VIOLATION */}
-      {activeTab === "add" && (
-        <form onSubmit={addViolation} style={styles.form}>
-          <h2>➕ Add Violation</h2>
-
-          <input placeholder="Vehicle Number"
-            value={form.vehicleNumber}
-            onChange={(e) => setForm({ ...form, vehicleNumber: e.target.value })} />
-
-          <input placeholder="Location"
-            value={form.location}
-            onChange={(e) => setForm({ ...form, location: e.target.value })} />
-
-          <input placeholder="Description"
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })} />
-
-          <input placeholder="Fine Amount"
-            value={form.fineAmount}
-            onChange={(e) => setForm({ ...form, fineAmount: e.target.value })} />
-
-          <input
-            type="file"
-            onChange={(e) => setForm({ ...form, image: e.target.files[0] })}
-          />
-
-          <button style={styles.addBtn}>Add Violation</button>
-        </form>
-      )}
-
-      {/* REPORTS */}
-      {activeTab === "reports" && (
-        <div style={styles.reportGrid}>
-          {reports.map((r) => (
-            <div key={r._id} style={styles.reportCard}>
-
-              <div style={styles.imageBox}>
-                {r.image && (
-                  <img
-                    src={`http://localhost:8000/uploads/${r.image}`}
-                    alt=""
-                    style={styles.reportImg}
-                  />
+        {/* ✅ VIOLATIONS */}
+        {activeTab === "violations" && (
+          <div style={styles.reportGrid}>
+            {violations.map((v) => (
+              <div key={v._id} style={styles.card}
+                onMouseEnter={(e) => handleHover(e, true)}
+                onMouseLeave={(e) => handleHover(e, false)}
+              >
+                {v.image && (
+                  <img src={`http://localhost:8000/uploads/${v.image}`} style={styles.reportImg} />
                 )}
+
+                <h3>🚗 {v.vehicleNumber}</h3>
+                <p>📍 {v.location}</p>
+                <p>💰 ₹{v.fineAmount}</p>
+
+                <span style={{
+                  ...styles.status,
+                  background: v.status === "Paid" ? "#22c55e" : "#f59e0b"
+                }}>
+                  {v.status}
+                </span>
+
+                <a
+                  href={`https://www.google.com/maps?q=${encodeURIComponent(v.location)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={styles.mapBtn}
+                >
+                  🗺️ View Map
+                </a>
               </div>
+            ))}
+          </div>
+        )}
 
-              <div style={styles.reportBody}>
-                <h3 style={styles.vehicle}>
-  🚗 {r.vehicleNumber || r.vehicle || "N/A"}
-</h3>
-
-<p style={styles.info}>
-  📍 {r.location || r.place || "N/A"}
-</p>
-
-<p style={styles.desc}>
-  📝 {r.description || r.desc || "No description"}
-</p>
-              </div>
-
-            </div>
-          ))}
-        </div>
-      )}
-
+      </div>
     </div>
   );
 }
@@ -244,11 +260,11 @@ const ChartBox = ({ title, data, type, colors }) => (
           <XAxis dataKey="name" />
           <YAxis />
           <Tooltip />
-          <Bar dataKey="value" fill="#60a5fa" />
+          <Bar dataKey="value" fill="#a855f7" />
         </BarChart>
       ) : (
         <PieChart>
-          <Pie data={data} dataKey="value" outerRadius={80} label>
+          <Pie data={data} dataKey="value" outerRadius={80}>
             {data.map((_, i) => (
               <Cell key={i} fill={colors[i]} />
             ))}
@@ -259,139 +275,61 @@ const ChartBox = ({ title, data, type, colors }) => (
   </div>
 );
 
-/* STYLES (MODERN UI) */
+/* STYLES */
 const styles = {
-  container: { padding: "30px", minHeight: "100vh" },
-
-  title: { textAlign: "center", marginBottom: "10px" },
-
-  toggle: {
-    position: "fixed",
-    top: 20,
-    right: 20,
-    padding: "10px",
-    borderRadius: "50%",
-    border: "none",
-    cursor: "pointer",
-  },
-
-  tabs: {
+  container: {
     display: "flex",
-    justifyContent: "center",
-    gap: "10px",
-    margin: "20px"
+    minHeight: "100vh",
+    background: "linear-gradient(135deg,#1e1b4b,#312e81,#581c87)",
+    color: "#fff"
   },
-
+  sidebar: {
+    width: "220px",
+    padding: "20px",
+    background: "rgba(0,0,0,0.3)"
+  },
+  sideBtn: {
+    padding: "10px",
+    background: "transparent",
+    color: "#fff",
+    border: "none"
+  },
+  main: { flex: 1, padding: "20px" },
+  tabs: { display: "flex", gap: "10px", marginBottom: "20px" },
   tab: {
-    padding: "10px 15px",
-    border: "none",
-    borderRadius: "8px",
-    color: "#fff",
-    cursor: "pointer"
-  },
-
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))",
-    gap: "20px"
-  },
-
-  stat: {
-    padding: "20px",
-    background: "rgba(255,255,255,0.1)",
-    borderRadius: "10px",
-    textAlign: "center"
-  },
-
-  card: {
-    padding: "15px",
-    borderRadius: "12px",
-    marginTop: "10px",
-    background: "#fff",
-    color: "#000",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-    maxWidth: "400px",
-    margin: "auto"
-  },
-
-  addBtn: {
     padding: "10px",
-    background: "#2563eb",
+    background: "#9333ea",
     color: "#fff",
     border: "none",
-    borderRadius: "6px"
+    borderRadius: "10px"
   },
-
-  select: {
-    padding: "6px",
-    borderRadius: "6px"
-  },
-
-  chartGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))",
-    gap: "20px",
-    marginTop: "30px"
-  },
-
-  chartCard: {
-    background: "rgba(255,255,255,0.1)",
-    padding: "20px",
-    borderRadius: "12px"
-  },
-
-  /* REPORT UI */
   reportGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))",
     gap: "20px"
   },
-
-  reportCard: {
-    background: "#fff",
-    borderRadius: "16px",
-    overflow: "hidden",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
-    transition: "0.3s",
+  card: {
+    padding: "15px",
+    borderRadius: "15px",
+    background: "rgba(255,255,255,0.08)",
+    backdropFilter: "blur(10px)"
   },
-
-  imageBox: {
-    width: "100%",
-    height: "180px",
-    overflow: "hidden",
-  },
-
   reportImg: {
     width: "100%",
-    height: "100%",
+    height: "150px",
     objectFit: "cover",
+    borderRadius: "10px"
   },
-
-  reportBody: {
-    padding: "12px",
+  status: {
+    padding: "5px",
+    borderRadius: "8px",
+    display: "inline-block",
+    marginTop: "8px"
   },
-
-  vehicle: {
-    margin: "5px 0",
-    fontWeight: "bold",
-  },
-
-  info: {
-    fontSize: "14px",
-    opacity: 0.8,
-  },
-
-  desc: {
-    fontSize: "13px",
-    marginTop: "5px",
+  mapBtn: {
+    display: "block",
+    marginTop: "10px",
+    color: "#4ade80"
   }
 };
 

@@ -7,20 +7,23 @@ function PoliceDashboard() {
   const [activeTab, setActiveTab] = useState("violations");
   const [violations, setViolations] = useState([]);
   const [reports, setReports] = useState([]);
+  const [blacklist, setBlacklist] = useState([]);
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [locationFilter, setLocationFilter] = useState("");
 
-  const [theme, setTheme] = useState(localStorage.getItem("theme") || "dark");
+  const [theme, setTheme] = useState(
+    localStorage.getItem("theme") || "dark"
+  );
 
   const [form, setForm] = useState({
     vehicleNumber: "",
     location: "",
     description: "",
+    fineAmount: "",
     image: null,
   });
 
+  /* THEME */
   useEffect(() => {
     document.body.className = theme;
     localStorage.setItem("theme", theme);
@@ -29,12 +32,35 @@ function PoliceDashboard() {
   const toggleTheme = () =>
     setTheme(theme === "dark" ? "light" : "dark");
 
+  /* FETCH DATA */
   const fetchData = async () => {
     try {
       const v = await axios.get(`${BASE}/api/violations`);
       const r = await axios.get(`${BASE}/api/reports`);
-      setViolations(v.data);
-      setReports(r.data);
+
+      const vData = v.data || [];
+
+      setViolations(vData);
+      setReports(r.data || []);
+
+      /* ⭐ BLACKLIST LOGIC */
+      const countMap = {};
+
+      vData.forEach((v) => {
+        if (!v.vehicleNumber) return;
+
+        const num = v.vehicleNumber.toUpperCase();
+        countMap[num] = (countMap[num] || 0) + 1;
+      });
+
+      const blacklistedVehicles = Object.keys(countMap)
+        .filter((num) => countMap[num] >= 3)
+        .map((num) => ({
+          vehicleNumber: num,
+          count: countMap[num],
+        }));
+
+      setBlacklist(blacklistedVehicles);
     } catch (err) {
       console.log(err);
     }
@@ -44,220 +70,276 @@ function PoliceDashboard() {
     fetchData();
   }, []);
 
-  const updateStatus = async (id, status) => {
-    await axios.put(`${BASE}/api/violations/${id}`, { status });
+  /* ADD VIOLATION */
+  const addViolation = async (e) => {
+    e.preventDefault();
+
+    const fd = new FormData();
+    Object.keys(form).forEach((key) => fd.append(key, form[key]));
+
+    await axios.post(`${BASE}/api/violation`, fd);
+
+    alert("Violation Added");
+
+    setForm({
+      vehicleNumber: "",
+      location: "",
+      description: "",
+      fineAmount: "",
+      image: null,
+    });
+
     fetchData();
+    setActiveTab("violations");
   };
 
-  const deleteViolation = async (id) => {
-    if (!window.confirm("Delete?")) return;
-    await axios.delete(`${BASE}/api/violations/${id}`);
-    fetchData();
-  };
-
-  const filtered = violations.filter((v) =>
-    v.vehicleNumber.toLowerCase().includes(search.toLowerCase()) &&
-    (statusFilter === "" || v.status === statusFilter) &&
-    (locationFilter === "" ||
-      (v.location || "").toLowerCase().includes(locationFilter.toLowerCase()))
+  /* FILTER */
+  const filteredViolations = violations.filter((v) =>
+    (v.vehicleNumber || "")
+      .toLowerCase()
+      .includes(search.toLowerCase())
   );
 
   return (
     <div style={styles[theme].container}>
+      <div style={styles.layout}>
 
-      <button onClick={toggleTheme} style={styles.toggle}>
-        {theme === "dark" ? "🌙" : "☀️"}
-      </button>
+        {/* SIDEBAR */}
+        <div style={styles.sidebar}>
+          <h2>🚔 POLICE</h2>
 
-      <h1 style={styles.title}>👮 Police Dashboard</h1>
+          {["violations", "reports", "blacklist", "add"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={styles.sideBtn(activeTab === tab)}
+            >
+              {tab.toUpperCase()}
+            </button>
+          ))}
 
-      {/* TABS */}
-      <div style={styles.tabs}>
-        {["violations", "reports", "add"].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            style={styles.tab(activeTab === tab)}
-          >
-            {tab.toUpperCase()}
+          <button onClick={toggleTheme} style={styles.themeBtn}>
+            {theme === "dark" ? "🌙 Dark" : "☀️ Light"}
           </button>
-        ))}
-      </div>
-
-      {/* FILTER */}
-      {activeTab === "violations" && (
-        <div style={styles.filter}>
-          <input
-            placeholder="Search Vehicle"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={styles.input}
-          />
-
-          <input
-            placeholder="Location"
-            value={locationFilter}
-            onChange={(e) => setLocationFilter(e.target.value)}
-            style={styles.input}
-          />
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={styles.input}
-          >
-            <option value="">All</option>
-            <option>Pending</option>
-            <option>Confirmed</option>
-            <option>Resolved</option>
-          </select>
         </div>
-      )}
 
-      {/* VIOLATIONS */}
-      {activeTab === "violations" && (
-        <div style={styles.grid}>
-          {filtered.map((v) => (
-            <div key={v._id} style={styles.card(theme)}>
+        {/* MAIN */}
+        <div style={styles.main}>
 
-              {v.image && (
-                <img
-                  src={`${BASE}/uploads/${v.image}`}
-                  alt=""
-                  style={styles.img}
-                />
-              )}
+          {/* SEARCH */}
+          <div style={styles.topbar}>
+            <input
+              placeholder="Search vehicle..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={styles.search}
+            />
+          </div>
 
-              <h3>🚗 {v.vehicleNumber}</h3>
-              <p>📍 {v.location}</p>
-              <p>{v.description}</p>
+          {/* VIOLATIONS */}
+          {activeTab === "violations" && (
+            <div style={styles.grid}>
+              {filteredViolations.map((v) => (
+                <div key={v._id} style={styles.card}>
+                  <h3>🚗 {v.vehicleNumber}</h3>
+                  <p>📍 {v.location}</p>
+                  <p>{v.description}</p>
 
-              {/* 📍 MAP INSIDE CARD */}
-              {v.location && (
-                <div style={styles.mapBox}>
-                  <iframe
-                    title="map"
-                    width="100%"
-                    height="160"
-                    loading="lazy"
-                    style={{ border: 0 }}
-                    src={`https://maps.google.com/maps?q=${encodeURIComponent(
+                  {v.image && (
+                    <img
+                      src={`${BASE}/uploads/${v.image}`}
+                      style={styles.img}
+                    />
+                  )}
+
+                  <a
+                    href={`https://www.google.com/maps?q=${encodeURIComponent(
                       v.location
-                    )}&z=15&output=embed`}
-                  />
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={styles.map}
+                  >
+                    📍 View Map
+                  </a>
                 </div>
-              )}
+              ))}
+            </div>
+          )}
 
-              <select
-                value={v.status}
-                onChange={(e) => updateStatus(v._id, e.target.value)}
-                style={styles.select(v.status)}
-              >
-                <option>Pending</option>
-                <option>Confirmed</option>
-                <option>Resolved</option>
-              </select>
+          {/* REPORTS */}
+          {activeTab === "reports" && (
+            <div style={styles.grid}>
+              {reports.map((r) => (
+                <div key={r._id} style={styles.card}>
+                  <h3>🚗 {r.vehicleNumber}</h3>
+                  <p>📍 {r.location}</p>
+                  <p>{r.description}</p>
 
-              <button
-                onClick={() => deleteViolation(v._id)}
-                style={styles.delete}
-              >
-                ❌ Delete
+                  {r.image && (
+                    <img
+                      src={`${BASE}/uploads/${r.image}`}
+                      style={styles.img}
+                    />
+                  )}
+
+                  <a
+                    href={`https://www.google.com/maps?q=${encodeURIComponent(
+                      r.location
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={styles.map}
+                  >
+                    📍 View Map
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ⭐ BLACKLIST */}
+          {activeTab === "blacklist" && (
+            <div>
+              <h2>🚫 Blacklisted Vehicles</h2>
+
+              <div style={styles.grid}>
+                {blacklist.length === 0 ? (
+                  <p>No blacklisted vehicles</p>
+                ) : (
+                  blacklist.map((b, i) => (
+                    <div key={i} style={styles.blackCard}>
+                      🚫 {b.vehicleNumber}
+                      <p>{b.count} Violations</p>
+                      <b>Status: BLACKLISTED</b>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ADD VIOLATION */}
+          {activeTab === "add" && (
+            <form onSubmit={addViolation} style={styles.form}>
+              <h2>Add Violation</h2>
+
+              <input
+                placeholder="Vehicle Number"
+                value={form.vehicleNumber}
+                onChange={(e) =>
+                  setForm({ ...form, vehicleNumber: e.target.value })
+                }
+                style={styles.input}
+              />
+
+              <input
+                placeholder="Location"
+                value={form.location}
+                onChange={(e) =>
+                  setForm({ ...form, location: e.target.value })
+                }
+                style={styles.input}
+              />
+
+              <textarea
+                placeholder="Description"
+                value={form.description}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+                style={styles.input}
+              />
+
+              <input
+                placeholder="Fine Amount"
+                value={form.fineAmount}
+                onChange={(e) =>
+                  setForm({ ...form, fineAmount: e.target.value })
+                }
+                style={styles.input}
+              />
+
+              <input
+                type="file"
+                onChange={(e) =>
+                  setForm({ ...form, image: e.target.files[0] })
+                }
+              />
+
+              <button type="submit" style={styles.btn}>
+                ➕ Add Violation
               </button>
-            </div>
-          ))}
-        </div>
-      )}
+            </form>
+          )}
 
-      {/* REPORTS */}
-      {activeTab === "reports" && (
-        <div style={styles.grid}>
-          {reports.map((r) => (
-            <div key={r._id} style={styles.card(theme)}>
-              <h3>{r.vehicleNumber}</h3>
-              <p>{r.location}</p>
-              <p>{r.description}</p>
-            </div>
-          ))}
         </div>
-      )}
-
-      {/* ADD */}
-      {activeTab === "add" && (
-        <form style={styles.form}>
-          <input placeholder="Vehicle" />
-          <input placeholder="Location" />
-          <input placeholder="Description" />
-          <input type="file" />
-          <button style={styles.add}>Add</button>
-        </form>
-      )}
+      </div>
     </div>
   );
 }
 
-/* 🎨 MODERN UI */
+/* STYLES */
 const styles = {
   dark: {
     container: {
-      padding: "30px",
-      minHeight: "100vh",
       background: "#0f172a",
       color: "#fff",
+      minHeight: "100vh",
     },
   },
-
   light: {
     container: {
-      padding: "30px",
-      minHeight: "100vh",
       background: "#f1f5f9",
       color: "#000",
+      minHeight: "100vh",
     },
   },
 
-  title: { textAlign: "center" },
+  layout: { display: "flex" },
 
-  toggle: {
-    position: "fixed",
-    top: "20px",
-    right: "20px",
-    padding: "10px",
-    borderRadius: "50%",
-    border: "none",
-  },
-
-  tabs: {
+  sidebar: {
+    width: "220px",
+    padding: "20px",
+    background: "#111827",
     display: "flex",
-    justifyContent: "center",
+    flexDirection: "column",
     gap: "10px",
-    margin: "20px 0",
   },
 
-  tab: (active) => ({
+  sideBtn: (active) => ({
     padding: "10px",
-    background: active ? "#22c55e" : "#334155",
+    background: active ? "#3b82f6" : "transparent",
     color: "#fff",
     border: "none",
-    borderRadius: "8px",
   }),
 
-  filter: { display: "flex", gap: "10px" },
+  themeBtn: { marginTop: "20px", padding: "10px" },
 
-  input: { padding: "10px", borderRadius: "8px" },
+  main: { flex: 1, padding: "20px" },
+
+  topbar: { marginBottom: "20px" },
+
+  search: { padding: "10px", width: "250px" },
 
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))",
-    gap: "20px",
+    gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))",
+    gap: "15px",
   },
 
-  card: (theme) => ({
-    background: theme === "dark" ? "#1e293b" : "#fff",
-    color: theme === "dark" ? "#fff" : "#000",
+  card: {
     padding: "15px",
+    background: "#1e293b",
     borderRadius: "12px",
-  }),
+  },
+
+  blackCard: {
+    padding: "15px",
+    background: "#7f1d1d",
+    borderRadius: "12px",
+    color: "white",
+  },
 
   img: {
     width: "100%",
@@ -266,32 +348,10 @@ const styles = {
     borderRadius: "10px",
   },
 
-  mapBox: {
+  map: {
+    display: "block",
     marginTop: "10px",
-    borderRadius: "10px",
-    overflow: "hidden",
-  },
-
-  select: (status) => ({
-    marginTop: "10px",
-    padding: "8px",
-    borderRadius: "6px",
-    background:
-      status === "Resolved"
-        ? "#16a34a"
-        : status === "Confirmed"
-        ? "#2563eb"
-        : "#f59e0b",
-    color: "#fff",
-  }),
-
-  delete: {
-    marginTop: "10px",
-    background: "red",
-    color: "#fff",
-    border: "none",
-    padding: "8px",
-    borderRadius: "6px",
+    color: "#38bdf8",
   },
 
   form: {
@@ -299,13 +359,17 @@ const styles = {
     flexDirection: "column",
     gap: "10px",
     maxWidth: "400px",
-    margin: "auto",
   },
 
-  add: {
-    background: "#2563eb",
-    color: "#fff",
+  input: {
     padding: "10px",
+    borderRadius: "8px",
+  },
+
+  btn: {
+    padding: "10px",
+    background: "#3b82f6",
+    color: "#fff",
     border: "none",
     borderRadius: "8px",
   },

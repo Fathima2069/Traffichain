@@ -8,18 +8,16 @@ const http = require("http");
 const { Server } = require("socket.io");
 
 const app = express();
-const server = http.createServer(app); // ✅ IMPORTANT
-const io = new Server(server, {
-  cors: { origin: "*" },
-});
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
 
 const PORT = 8000;
 
 app.use(express.json());
 app.use(cors());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-app.set("io", io); // ✅ allow routes to use socket
+app.set("io", io);
+app.use(express.urlencoded({ extended: true }));
 
 /* ---------------- SOCKET ---------------- */
 io.on("connection", (socket) => {
@@ -41,10 +39,14 @@ const User = mongoose.model("User", new mongoose.Schema({
   role: String,
 }));
 
+// ✅ FIXED VEHICLE MODEL (IMPORTANT)
 const Vehicle = mongoose.model("Vehicle", new mongoose.Schema({
   username: String,
   vehicleNumber: String,
   vehicleType: String,
+  ownerName: String,
+  model: String,
+  color: String
 }));
 
 const Violation = mongoose.model("Violation", new mongoose.Schema({
@@ -55,7 +57,8 @@ const Violation = mongoose.model("Violation", new mongoose.Schema({
   image: String,
   status: { type: String, default: "Pending" },
   fineAmount: { type: Number, default: 100 },
-}));
+  deadline: Date
+}, { timestamps: true }));
 
 const Report = mongoose.model("Report", new mongoose.Schema({
   username: String,
@@ -91,10 +94,19 @@ app.post("/api/login", async (req, res) => {
 });
 
 /* ---------------- VEHICLES ---------------- */
+// ✅ KEEP ONLY ONE ROUTE (FIXED)
 app.post("/api/vehicles", async (req, res) => {
-  const v = new Vehicle(req.body);
-  await v.save();
-  res.json(v);
+  try {
+    console.log("BODY RECEIVED:", req.body);
+
+    const vehicle = new Vehicle(req.body);
+    await vehicle.save();
+
+    res.json(vehicle);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Error saving vehicle" });
+  }
 });
 
 app.get("/api/vehicles/:username", async (req, res) => {
@@ -111,7 +123,6 @@ app.post("/api/reports", upload.single("image"), async (req, res) => {
 
   await report.save();
 
-  // 🔔 notification
   req.app.get("io").emit("newReport", {
     message: "🚫 New report submitted",
   });
@@ -129,41 +140,75 @@ app.get("/api/reports/:username", async (req, res) => {
 
 /* ---------------- VIOLATIONS ---------------- */
 app.post("/api/violation", upload.single("image"), async (req, res) => {
-  const violation = new Violation({
-    ...req.body,
-    image: req.file ? req.file.filename : null,
-  });
+  try {
+    const now = new Date();
+    const deadline = new Date();
+    deadline.setDate(now.getDate() + 7);
 
-  await violation.save();
+    const violation = new Violation({
+      ...req.body,
+      image: req.file ? req.file.filename : null,
+      deadline
+    });
 
-  // 🔔 notification
-  req.app.get("io").emit("newViolation", {
-    message: "🚨 New violation added",
-  });
+    await violation.save();
 
-  res.json({ message: "Violation added" });
+    req.app.get("io").emit("newViolation", {
+      message: "🚨 New violation added",
+    });
+
+    res.json({ message: "Violation added" });
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Error adding violation" });
+  }
 });
 
 app.get("/api/violations", async (req, res) => {
-  res.json(await Violation.find());
+  const data = await Violation.find();
+  const today = new Date();
+
+  const updated = data.map(v => {
+    let finalAmount = v.fineAmount;
+
+    if (v.status !== "Paid" && v.deadline && today > v.deadline) {
+      finalAmount += 100;
+    }
+
+    return { ...v._doc, finalAmount };
+  });
+
+  res.json(updated);
 });
 
 app.get("/api/violations/:username", async (req, res) => {
-  res.json(await Violation.find({ username: req.params.username }));
+  const data = await Violation.find({ username: req.params.username });
+  const today = new Date();
+
+  const updated = data.map(v => {
+    let finalAmount = v.fineAmount;
+
+    if (v.status !== "Paid" && v.deadline && today > v.deadline) {
+      finalAmount += 100;
+    }
+
+    return { ...v._doc, finalAmount };
+  });
+
+  res.json(updated);
 });
 
-/* ✅ UPDATE STATUS */
 app.put("/api/violations/:id", async (req, res) => {
   await Violation.findByIdAndUpdate(req.params.id, req.body);
 
   req.app.get("io").emit("statusUpdate", {
-    message: "🔄 Violation status updated",
+    message: "🔄 Status updated",
   });
 
-  res.json({ message: "Updated ✅" });
+  res.json({ message: "Updated" });
 });
 
-/* 💰 PAYMENT */
 app.put("/api/violation/pay/:id", async (req, res) => {
   await Violation.findByIdAndUpdate(req.params.id, { status: "Paid" });
 
@@ -171,13 +216,12 @@ app.put("/api/violation/pay/:id", async (req, res) => {
     message: "✅ Payment successful",
   });
 
-  res.json({ message: "Payment successful" });
+  res.json({ message: "Paid" });
 });
 
-/* ❌ DELETE */
 app.delete("/api/violations/:id", async (req, res) => {
   await Violation.findByIdAndDelete(req.params.id);
-  res.json({ message: "Deleted ✅" });
+  res.json({ message: "Deleted" });
 });
 
 /* ---------------- STATS ---------------- */
@@ -209,34 +253,7 @@ async function createUsers() {
   }
 }
 
-app.post("/api/violation", async (req, res) => {
-  const newViolation = new Violation(req.body);
-  await newViolation.save();
-
-  // 🔔 SEND NOTIFICATION
-  const io = req.app.get("io");
-  io.emit("newViolation", {
-    message: "🚨 New violation added",
-  });
-
-  res.send("Violation added");
-});
-
-app.put("/api/violation/pay/:id", async (req, res) => {
-  await Violation.findByIdAndUpdate(req.params.id, {
-    status: "Paid",
-  });
-
-  const io = req.app.get("io");
-
-  io.emit("paymentSuccess", {
-    message: "✅ Payment successful",
-  });
-
-  res.send("Paid");
-});
-
-/* ---------------- START SERVER ---------------- */
+/* ---------------- START ---------------- */
 server.listen(PORT, () =>
   console.log(`🚀 Server running at http://localhost:${PORT}`)
 );
